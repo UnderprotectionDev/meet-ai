@@ -30,7 +30,6 @@ export const agentsRouter = createTRPCRouter({
 
       return updatedAgent;
     }),
-
   remove: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
@@ -45,6 +44,21 @@ export const agentsRouter = createTRPCRouter({
       }
 
       return removeAgent;
+    }),
+  create: protectedProcedure
+    .input(agentsInsertSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { auth } = ctx;
+
+      const [createdAgent] = await db
+        .insert(agents)
+        .values({
+          ...input,
+          userId: auth.user.id,
+        })
+        .returning();
+
+      return createdAgent;
     }),
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
@@ -111,20 +125,5 @@ export const agentsRouter = createTRPCRouter({
       const totalPages = Math.ceil(total.count / pageSize);
 
       return { items: data, total: total.count, totalPages };
-    }),
-  create: protectedProcedure
-    .input(agentsInsertSchema)
-    .mutation(async ({ input, ctx }) => {
-      const { auth } = ctx;
-
-      const [createdAgent] = await db
-        .insert(agents)
-        .values({
-          ...input,
-          userId: auth.user.id,
-        })
-        .returning();
-
-      return createdAgent;
     }),
 });
