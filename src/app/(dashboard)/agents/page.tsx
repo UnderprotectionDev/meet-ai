@@ -11,8 +11,16 @@ import { ErrorBoundary } from "react-error-boundary";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import type { SearchParams } from "nuqs/server";
+import { loadSearchParams } from "@/modules/agents/params";
 
-export default async function AgentsPage() {
+interface AgentsPageProps {
+  searchParams: Promise<SearchParams>;
+}
+
+export default async function AgentsPage({ searchParams }: AgentsPageProps) {
+  const filters = await loadSearchParams(searchParams);
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -22,7 +30,9 @@ export default async function AgentsPage() {
   }
 
   const queryClient = getQueryClient();
-  void queryClient.prefetchQuery(trpc.agents.getMany.queryOptions());
+  void queryClient.prefetchQuery(
+    trpc.agents.getMany.queryOptions({ ...filters })
+  );
 
   return (
     <>
