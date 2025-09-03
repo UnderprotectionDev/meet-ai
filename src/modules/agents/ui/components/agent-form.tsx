@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 
 interface AgentFormProps {
   onSuccess: () => void;
@@ -30,6 +31,7 @@ export const AgentForm = ({
   onCancel,
   initialValues,
 }: AgentFormProps) => {
+  const router = useRouter();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
@@ -39,12 +41,17 @@ export const AgentForm = ({
         await queryClient.invalidateQueries(
           trpc.agents.getMany.queryOptions({})
         );
+        await queryClient.invalidateQueries(
+          trpc.premium.getFreeUsage.queryOptions()
+        );
         onSuccess?.();
       },
       onError: (error) => {
         toast.error(error.message);
 
-        // TODO: Check if error code is "FORBIDDEN", redirect to /upgrade
+        if (error.data?.code === "FORBIDDEN") {
+          router.push("/upgrade");
+        }
       },
     })
   );
@@ -61,13 +68,10 @@ export const AgentForm = ({
             trpc.agents.getOne.queryOptions({ id: initialValues.id })
           );
         }
-        // TODO: Invalidate free tier usage
         onSuccess?.();
       },
       onError: (error) => {
         toast.error(error.message);
-
-        // TODO: Check if error code is "FORBIDDEN", redirect to /upgrade
       },
     })
   );
